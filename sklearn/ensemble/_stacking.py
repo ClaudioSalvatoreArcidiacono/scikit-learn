@@ -41,6 +41,7 @@ from sklearn.utils.validation import (
     _check_feature_names_in,
     _check_response_method,
     _estimator_has,
+    _is_pandas_df,
     check_is_fitted,
     column_or_1d,
 )
@@ -131,6 +132,14 @@ class _BaseStacking(TransformerMixin, _BaseHeterogeneousEnsemble, metaclass=ABCM
 
         self._n_feature_outs = [pred.shape[1] for pred in X_meta]
         if self.passthrough:
+            if _is_pandas_df(X):
+                return X.assign(
+                    **{
+                        f"predictions__{name_est}": preds for (name_est, _), preds in zip(
+                            self.named_estimators_.items(), X_meta
+                        )
+                    }
+                )
             X_meta.append(X)
             if sparse.issparse(X):
                 return sparse.hstack(X_meta, format=X.format)
